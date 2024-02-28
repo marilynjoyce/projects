@@ -1,0 +1,296 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    background-color: rgb(255, 255, 255);
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 200;
+    font-family: 'Source Sans Pro', sans-serif;
+    color: #000000;
+	letter-spacing: 1px;
+	line-height:27px;
+  }
+  figure {
+    display: inline-block;
+    vertical-align: top;
+    margin:0;
+}
+.imGSec{white-space:nowrap;}
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+  kbd {
+    color: #121212;
+  }
+</style>
+
+<title>Mesh Edit</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+
+<script>
+  MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+    }
+  };
+</script>
+<script id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+
+</head>
+
+<form>
+	<input type="button" value="Back to home" onclick="history.back()">
+   </form>
+<body>
+	<div align="middle">
+		<tr>
+		  <td>
+			<img src="images/peter.png" align="middle" width="800px"/>
+		  </td>
+		</tr>
+	  </table>
+	</div>
+<h1 align="middle">Mesh Edit</h1>
+<h2 align="middle">Marilyn Yu</h2>
+
+<div>
+
+<h1 align="left">Overview</h1>
+<p>
+    In this project, I'll demonstrate how to model and represent 3D objects on a screen. If we think about all objects in video games, images, etc. being represented as a collection of triangles in a mesh, we can take advantage of our ability to perform operations on triangles to create smoother and more realistic meshes. More specifically, after implementing the flipping and splitting of triangle edges, we can finally perform loop subdivision using these two operations, which, for example, transforms a cow made of flat triangles into a very realistically smooth… cow! 
+</p>
+<br>
+
+<h1 align="left">Bezier Curves with 1D de Casteljau Subdivision</h1>
+
+<p>
+    Casteljau’s algorithm is a method to evaluate Bezier curves and surfaces. For curves, given a set of control points, I calculated the new set of points via linear interpolation based on a parameter t, where the new points follow formula (1-t) * p1 + t *p2, and 0<=t<=1. In the graphics view, I press ‘E’ to perform one level of linear interpolation, and I can keep pressing ‘E’ until one point remains. Mathematically, we repeat the interpolation on each new set of points (with one less point each level of lerp), until we have one point remaining. This point is on the Bezier curve. 
+</p>
+<div align="middle">
+	<table style="width:100%">
+	  <tr align="center">
+		<td>
+		  <img src="images/castel1.gif" align="middle" width="400px" height="250px"/>
+		  <figcaption>Custom Bezier curve with 6 control points. Each step of linear interpolation is shown with new intermediate points.</figcaption>
+		</td>
+		<td>
+		  <img src="images/casteljau.gif" align="middle" width="400px" height="250px"/>
+		  <figcaption>Slightly different Bezier curve: scrolling through all values of t.</figcaption>
+		</td>
+	  </tr>
+	</table>
+</div>
+<br>
+<h1 align="left">Bezier Surfaces with Separable 1D de Casteljau</h1>
+
+<p>
+    I followed a similar process as Bezier curves for Bezier surfaces, except now I dealt with 3D coordinates. I performed linear interpolation separately on n rows with parameter t = u, which is no different than above. Each row is a vector of 3D points. Once I acquired n intermediate 3D points using full linear interpolation (until I was left with one point for each row), I used parameter t = v and linearly interpolate on those n points to obtain our final 3D point on the Bezier surface. You can see the rendered teapot in the next part.
+</p>
+<br>
+
+<h1 align="left">Triangle Meshes and Half-Edge Data Structure</h1>
+
+<h2 align="left">Area-Weighted Vertex Normals</h2>
+<p>
+    I next implemented area-weighted vertex normals for Phong shading, which colors each pixel using normal vector interpolation. For a given vertex in the mesh, I used the Halfedge class to iterate through each adjacent triangular face of the vertex, or each face that contains that vertex. For each (triangular) face, I computed its area and weighted its normal vector by its area. This way, in the final vector, larger area faces have more influence in the pixel’s shading. I then summed these weighted areas and divided them by their total areas to get our final normal vector for the vertex. The impact this has is shown below, where I get much more smoothing instead of sharp edges due to the normal vector interpolation I did.
+</p>
+<div align="middle">
+	<table style="width:100%">
+	  <tr align="center">
+		<td>
+		  <img src="images/without_normals.png" align="middle" width="400px" height="250px"/>
+		  <figcaption>Teapot without vertex normals implemented</figcaption>
+		</td>
+		<td>
+		  <img src="images/with_normals.png" align="middle" width="400px" height="250px"/>
+		  <figcaption>Teapot with vertex normals implemented (smoother)</figcaption>
+		</td>
+	  </tr>
+	</table>
+</div>
+<br>
+
+
+<h1 align="left">Edge Flip</h1>
+<p>
+    To implement the edge flip, I first checked if either of the edge faces are on a boundary loop. If not, I continued and assigned variables for each inner and outer half edge, vertices, edges, and faces. This way, after the flip, I could easily keep track of each variable’s relation to one another, since each half edge corresponds to a neighboring half edge, a twin half edge, a face, and a vertex, and vice versa. When I flipped, I updated the corresponding half edges for each vertex, edge, and face. Note that some of this information didn’t change after the flip. For example, the two faces still each correspond to the same half edge as before the flip. Also, the corresponding edges for the outer half edges do not change, but their twin half edges do change after the flip. It was good to track everything, however, for good measure. Then, for each half edge, I updated its next halfedge in the iterator, twin halfedge, corresponding vertex, edge, and face. This completed the edge flip operation. Fortunately, I did not encounter a large debugging journey, but if I had to debug, a good option would be to draw out an example of two neighboring triangles, label all variables before and after the edge flip, and use print statements to check, for each halfedge, its next halfedge, twin halfedge, edge, vertex, and face. If it doesn’t match the drawing, I would know to modify the update for that specific type of variable.
+</p>
+<br>
+<div align="middle">
+	<table style="width:100%">
+	  <tr align="center">
+		<td>
+		  <img src="images/original_teapot.png" align="middle" width="500px" height="320px"/>
+		  <figcaption>Teapot with no edge flips or splits</figcaption>
+		</td>
+		<td>
+		  <img src="images/edge_flip.png" align="middle" width="500px" height="320px"/>
+		  <figcaption>Teapot with 7 edges flipped: can you spot which ones?</figcaption>
+		</td>
+	  </tr>
+	</table>
+</div>
+<br>
+
+<h1 align="left">Edge Split</h1>
+
+<p>
+    Half-edge splitting is a method that splits an edge, creating four triangles from two adjacent triangles by inserting a new vertex at the midpoint of the original edge, and connecting the opposite vertices of the two triangles through that vertex. Similar to edge flips, I had to track all half-edges, vertices, edges, and faces in the two adjacent triangles, but unlike edge flips, I had to create new elements here. Edge splitting creates a new vertex, two new triangles, and three new edges, as seen in the diagram. Therefore, I had to calculate the midpoint of the original edge to place the new vertex, and carefully track the pointers of each half edge to assign after the split. Also, we go from two half edge cycles to four half edge cycles, and I drew out a diagram to ensure each half edge’s “next” pointer was accurate. The function returns a pointer to a vertex iterator beginning at the midpoint of the original edge, or point “m” in the diagram.
+</p>
+<br>
+<div align="middle">
+    <tr>
+      <td>
+        <img src="images/diagram.png" align="middle" width="850px" height="300px"/>
+        <figcaption align="middle">Diagram demonstrating edge splitting on a triangle in the mesh.</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<br>
+<div align="middle">
+	<table style="width:100%">
+	  <tr align="center">
+		<td>
+		  <img src="images/edge_split.png" align="middle" width="500px" height="300px"/>
+		  <figcaption>Teapot with some split edges</figcaption>
+		</td>
+		<td>
+		  <img src="images/both.png" align="middle" width="500px" height="300px"/>
+		  <figcaption>Teapot with both edge flips and splits</figcaption>
+		</td>
+	  </tr>
+	</table>
+</div>
+<br>
+
+
+<h1 align="left">Loop Subdivision for Mesh Upsampling</h1>
+<p>
+    Sometimes, we may wish to convert a coarse polygon mesh into a higher-resolution one for better display and more accurate simulation. Such conversion requires an upsampling algorithm that nicely interpolates or approximates the original mesh data. Loop subdivision upsamples a mesh by subdividing each of its triangles into four smaller triangles and updating vertices of subdivided mesh based on some weighting scheme. 
+</p>
+<br>
+<div align="middle">
+    <tr>
+      <td>
+        <img src="images/6.png" align="middle" width="850px" height="300px"/>
+      </td>
+    </tr>
+  </table>
+</div>
+<br>
+<p>
+	To perform 4-1 subdivision on every triangle in the mesh, we can use the edge flip and split operations implemented above:
+</p>
+<br>
+<div align="middle">
+    <tr>
+      <td>
+        <img src="images/6.2.png" align="middle" width="1200px" height="300px"/>
+      </td>
+    </tr>
+  </table>
+</div>
+<br>
+<p>
+	I implemented loop subdivision by marking every vertex and edge in the original mesh as “original,” via setting their isNew = false. Then, I iterated through each vertex and calculated their new positions according to the loop subdivision weights. I repeated this for the new vertices which would be at the midpoints of each edge and set those positions in the newPosition variable in each edge iterator. Then came the splitting and flipping process: I split all original edges, and flipped certain edges to create an isotropic triangular mesh. I then updated all the vertices’ new positions.
+</p>
+<br>
+<div align="middle">
+	<table style="width:100%">
+	  <tr align="center">
+		<td>
+		  <img src="images/no_loop_1.png" align="middle" width="300px" height="300px"/>
+		  <figcaption>A basic cube with no loop subdivision (notice the diagonals)</figcaption>
+		</td>
+		<td>
+		  <img src="images/1_loop_1.png" align="middle" width="300px" height="300px"/>
+		  <figcaption>The cube after one round of loop subdivision.</figcaption>
+		</td>
+		<td>
+			<img src="images/2_loop_1.png" align="middle" width="300px" height="300px"/>
+			<figcaption>The cube after two rounds of loop subdivision.</figcaption>
+		  </td>
+		<td>
+			<img src="images/3_loop_1.png" align="middle" width="300px" height="300px"/>
+			<figcaption>The cube after three rounds of loop subdivision.</figcaption>
+		</td>  
+	  </tr>
+	</table>
+</div>
+<br>
+<h2>Observation from above:</h2>
+<p>
+	After running three few loop subdivisions, we observe that the sharp edges do get smoothed out, but the shape is asymmetric. This shouldn’t be happening, a cube is a symmetric figure! This is due to the shape of the edges in the original cube being only along some diagonals, and therefore the smoothing isn’t even. Idea: what if we pre-process the cube with edge splits so that the cube has even diagonals, and subdivides symmetrically? 
+</p>
+<br>
+<div align="left">
+	<table style="width:100%">
+	  <tr align="middle">
+		<td>
+		  <img src="images/pre_1.png" align="middle" width="300px" height="300px"/>
+		  <figcaption>Pre-processed cube with split edges on each face for symmetric subdivision</figcaption>
+		</td>
+		<td>
+		  <img src="images/pre_2.png" align="middle" width="300px" height="300px"/>
+		  <figcaption>The pre-processed cube after one round of loop subdivision.</figcaption>
+		</td>
+		<td>
+			<img src="images/pre_3.png" align="middle" width="300px" height="300px"/>
+			<figcaption>The pre-processed cube after two rounds of loop subdivision.</figcaption>
+		  </td>
+		<td>
+			<img src="images/pre_4.png" align="middle" width="300px" height="300px"/>
+			<figcaption>The pre-processed cube after three rounds of loop subdivision.</figcaption>
+		</td>  
+	  </tr>
+	</table>
+</div>
+<p>Now, notice how the final product after three loop subdivisions is symmetric. Thank you, pre-processed edge splits!</p>
+<br>
+<p>I also wanted to show loop subdivision on more complex meshes, like this cow.</p>
+<br>
+<div align="left">
+	<table style="width:100%">
+	  <tr align="middle">
+		<td>
+		  <img src="images/cow1.png" align="middle" width="300px" height="300px"/>
+		  <figcaption>Cow with no loop subdivision, you can clearly see where the triangles are.</figcaption>
+		</td>
+		<td>
+		  <img src="images/cow2.png" align="middle" width="300px" height="300px"/>
+		  <figcaption>Cow after one round of loop subdivision.</figcaption>
+		</td>
+		<td>
+			<img src="images/cow3.png" align="middle" width="300px" height="300px"/>
+			<figcaption>Cow after two rounds of loop subdivision.</figcaption>
+		  </td>
+		<td>
+			<img src="images/cow4.png" align="middle" width="300px" height="300px"/>
+			<figcaption>Cow after three rounds of loop subdivision, so s(MOO)th!</figcaption>
+		</td>  
+	  </tr>
+	</table>
+</div>
+<br>
+<h1>Conclusion</h1>
+<p>This project was so much fun. As a League of Legends and Brawl Stars player, you never really question how these smooth 3D objects get rendered on the screen. There is so much happening behind the scenes, and this project only describes a small fraction of 3D modeling and rendering. Playing around on Blender, I found it takes me hours to make a simple humanoid mesh that looks like it has to go to the bathroom. Even harder, how to ensure these meshes are manifold.</p>
+<br>
+<div align="middle">
+    <tr>
+      <td>
+        <img src="images/man.gif" align="middle"/>
+      </td>
+    </tr>
+  </table>
+</div>
+<br>
+</body>
+</html>

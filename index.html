@@ -6,11 +6,138 @@
 -->
 <html>
 	<head>
+		<style>
+			body {
+  font-family: 'Source Sans Pro',Helvetica Neue,Helvetica,Arial,sans-serif; 
+  font-size: 16px;
+  line-height: 1.75;
+}
+
+#timeline {
+  display: flex;
+  background-color: #031625;
+  overflow: hidden;
+
+  &:hover {
+    .tl-item {
+      width: 23.3333%;
+    }
+  }
+}
+  
+.tl-item {
+  transform: translate3d(0, 0, 0);
+  position: relative;
+  width: 25%;
+  height: 100vh;
+  min-height: 600px;
+  color: #fff;
+  overflow: hidden;
+  transition: width 0.5s ease;
+  
+  &:before, &:after {
+    transform: translate3d(0, 0, 0);
+    content: '';
+    position: absolute;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+  }
+
+  &:after {
+    background: transparentize(#031625, 0.15);
+    opacity: 1;
+    transition: opacity 0.5s ease;
+  }
+
+  &:before {
+    background: linear-gradient(to bottom, rgba(0,0,0,0) 0%,rgba(0,0,0,1) 75%);
+    z-index: 1;
+    opacity: 0;
+    transform: translate3d(0, 0, 0) translateY(50%);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+
+  &:hover {
+    width: 30% !important;
+    
+    &:after {
+      opacity: 0;
+    }
+
+    &:before {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) translateY(0);
+      transition: opacity 1s ease, transform 1s ease 0.25s;
+    }
+    
+    .tl-content {
+      opacity: 1;
+      transform: translateY(0);
+      transition: all 0.75s ease 0.5s;
+    }
+
+    .tl-bg {
+      filter: grayscale(0);
+    }
+  }
+}
+
+.tl-content {
+  transform: translate3d(0, 0, 0) translateY(25px);
+  line-height: normal;
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  margin: 0 1.618em;
+  top: 40%;
+  opacity: 0;
+  
+  
+  h1 {
+    font-family: 'Pathway Gothic One',Helvetica Neue,Helvetica,Arial,sans-serif;
+    text-transform: uppercase;
+    color: #1779cf;
+    font-size: 1.44rem;
+    font-weight: normal;
+  }
+}
+
+.tl-year {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-50%);
+  z-index: 1;
+  border-bottom: 1px solid #fff;
+  
+  p {
+    font-family: 'Pathway Gothic One',Helvetica Neue,Helvetica,Arial,sans-serif;
+    font-size: 1.728rem;
+    line-height: 0;
+  }
+}
+
+.tl-bg {
+  transform: translate3d(0, 0, 0);
+  position: absolute;
+  width: 100%; height: 100%;
+  top: 0; left: 0;
+  background-size: cover;
+  background-position: center center;
+  transition: filter 0.5s ease;
+  filter: grayscale(100%);
+}
+.hihi {
+  transform: translateX(-60%) translateY(20%);
+}
+
+		</style>
 		<title>Marilyn's Personal Website</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="assets/css/main.css" />
 		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+
 	</head>
 	<body class="is-preload">
 
@@ -30,15 +157,20 @@
 				<!-- Main -->
 					<div id="main">
 						<article class="thumb">
-							<a href="images/cubey.gif" class="image"><img src="images/cubey.gif" alt="" /></a>
-							<h2>CS PROJECT 1: RASTERIZER</h2>
-							<p>A writeup of my implementation of a PNG graphics renderer, where through code, I compare different rasterization and texture-mapping techniques.</p>
-							<a href="hw1/index.html">Link to writeup</a>
+							<a href="images/anti-aliasing_image_01.png" class="image"><img src="images/anti-aliasing_image_01.png" alt="" /></a>
+							<h2>RASTERIZER</h2>
+							<p>A writeup of my implementation of a PNG graphics renderer, where through code, I implement different rasterization and texture-mapping techniques towards the main goal of anti-aliasing (smoothing jaggy edges).</p>
+							<a href="hw1/index.html">
+								<button>View writeup</button>
+							</a>
 						</article>
 						<article class="thumb">
 							<a href="images/meshedit.png" class="image"><img src="images/meshedit.png" alt="" /></a>
-							<h2>CS PROJECT 2: MESHEDIT</h2>
-							<p>Coming soon</p>
+							<h2>MESHEDIT</h2>
+							<p>An in-depth writeup of my program comparing different strategies used to smooth triangular meshes and render more complex 3D models and 3D images on screen.</p>
+							<a href="hw2/index.html">
+								<button>View writeup</button>
+							</a>
 						</article>
 						<article class="thumb">
 							<a href="images/fulls/03.jpg" class="image"><img src="images/thumbs/03.jpg" alt="" /></a>
@@ -48,61 +180,120 @@
 						<article class="thumb">
 							<a href="images/fulls/04.jpg" class="image"><img src="images/thumbs/04.jpg" alt="" /></a>
 							<h2>CS PROJECT 4: COMING SOON</h2>
-							<p>Nunc blandit nisi ligula magna sodales lectus elementum non. Integer id venenatis velit.</p>
+							<p></p>
 						</article>
 						<article class="thumb">
 							<a href="images/fulls/05.jpg" class="image"><img src="images/thumbs/05.jpg" alt="" /></a>
 							<h2>CS PROJECT 5: COMING SOON</h2>
-							<p>Nunc blandit nisi ligula magna sodales lectus elementum non. Integer id venenatis velit.</p>
+							<p></p>
 						</article>
 						<article class="thumb">
-							<a href="images/fulls/06.jpg" class="image"><img src="images/thumbs/06.jpg" alt="" /></a>
-							<h2>ACTING PORTFOLIO</h2>
-							<p>Headshots and body shots</p>
-						</article>
-						<article class="thumb">
-							<a href="images/fulls/07.jpg" class="image"><img src="images/thumbs/07.jpg" alt="" /></a>
-							<h2>BLOG</h2>
-							<p>Nunc blandit nisi ligula magna sodales lectus elementum non. Integer id venenatis velit.</p>
-						</article>
-						<article class="thumb">
-							<a href="images/fulls/08.jpg" class="image"><img src="images/thumbs/08.jpg" alt="" /></a>
-							<h2>Nunc vehicula id nulla</h2>
-							<p>Nunc blandit nisi ligula magna sodales lectus elementum non. Integer id venenatis velit.</p>
-						</article>
-						<article class="thumb">
-							<a href="images/fulls/09.jpg" class="image"><img src="images/thumbs/09.jpg" alt="" /></a>
-							<h2>Neque et faucibus viverra</h2>
-							<p>Nunc blandit nisi ligula magna sodales lectus elementum non. Integer id venenatis velit.</p>
-						</article>
-						<article class="thumb">
-							<a href="images/fulls/10.jpg" class="image"><img src="images/thumbs/10.jpg" alt="" /></a>
-							<h2>Mattis ante fermentum</h2>
-							<p>Nunc blandit nisi ligula magna sodales lectus elementum non. Integer id venenatis velit.</p>
-						</article>
-						<article class="thumb">
-							<a href="images/fulls/11.jpg" class="image"><img src="images/thumbs/11.jpg" alt="" /></a>
-							<h2>Sed ac elementum arcu</h2>
-							<p>Nunc blandit nisi ligula magna sodales lectus elementum non. Integer id venenatis velit.</p>
-						</article>
-						<article class="thumb">
-							<a href="images/fulls/12.jpg" class="image"><img src="images/thumbs/12.jpg" alt="" /></a>
-							<h2>Vehicula id nulla dignissim</h2>
-							<p>Nunc blandit nisi ligula magna sodales lectus elementum non. Integer id venenatis velit.</p>
+							<a href="images/IMG_5580.JPG" class="image"><img src="images/IMG_5580.JPG" alt="" /></a>
+							<h2>YOUTUBE</h2>
+							<a href="https://www.youtube.com/@girlmare/videos">
+								<button>Watch my vlogs</button>
+							</a>
 						</article>
 					</div>
+					
+					<section id="timeline">
+						<h1>Industry</h1>
+						<div class = "hihi">
+							<img src="images/IMG_1578.jpeg" width="205px"height="310px">
+						</div>
+						<div class="tl-item">
+						  
+							<div class="tl-bg" style="background-image: url(https://placeimg.com/800/800/nature)"></div>
+							
+							<div class="tl-year">
+							  <p class="f2 heading--sanSerif">META</p>
+							</div>
+						
+							<div class="tl-content">
+							  <h1 class="f3 text--accent ttu">Incoming Software Engineering Intern, SUMMER 2024</h1>
+							</div>
+						
+						  </div>
+						  <div class="tl-item">
+						  
+							<div class="tl-bg" style="background-image: url(https://placeimg.com/800/800/nature)"></div>
+							
+							<div class="tl-year">
+							  <p class="f2 heading--sanSerif">ATLASSIAN</p>
+							</div>
+						
+							<div class="tl-content">
+							  <h1 class="f3 text--accent ttu">Software Engineering Intern</h1>
+							  <p>Integrated a LaunchDarkly feature flagging system into Bitbucket core using a redis node for caching. A relay proxy was tested but not needed. This was a charm for feature rollouts: with our old Django waffle flags, there was no central system where all flags per team could be located. With LaunchDarkly, we could organize our flags & target users based on attributes.</p>
+							</div>
+						
+						  </div>
+  
+						<div class="tl-item">
+						  
+						  <div class="tl-bg" style="background-image: url(https://placeimg.com/801/801/nature)"></div>
+						  
+						  <div class="tl-year">
+							<p class="f2 heading--sanSerif">SQUARE</p>
+						  </div>
+					  
+						  <div class="tl-content">
+							<h1>Consultant</h1>
+							<p>Market research to help Square's payment terminal expand to the Allied Health market.</p>
+						  </div>
+					  
+						</div>
+					  
+						<div class="tl-item">
+						  
+						  <div class="tl-bg" style="background-image: url(https://placeimg.com/802/802/nature)"></div>
+						  
+						  <div class="tl-year">
+							<p class="f2 heading--sanSerif">SPLICE</p>
+						  </div>
+					  
+						  <div class="tl-content">
+							<h1 class="f3 text--accent ttu">Consultant</h1>
+							<p>Defining an Early Creator music production market for Splice.</p>
+						  </div>
+					  
+						</div>
+					  
+						<div class="tl-item">
+						  
+						  <div class="tl-bg" style="background-image: url(https://placeimg.com/803/803/nature)"></div>
+						  
+						  <div class="tl-year">
+							<p class="f2 heading--sanSerif">ABBVIE</p>
+						  </div>
+					  
+						  <div class="tl-content">
+							<h1 class="f3 text--accent ttu">Data Science Intern</h1>
+							<p>Essentially coded lots of VBS macros for their clinical trial datasets.</p>
+						  </div>
+					  
+						</div>
+
+					  </section>
+					  
 
 				<!-- Footer -->
 					<footer id="footer" class="panel">
 						<div class="inner split">
 							<div>
 								<section>
-									<h2>Just trying things out</h2>
-									<p>I'm Marilyn, and I'm on several different journeys encompassing my interests in computer science, acting, and the arts. Come along with me via my new coding projects, internships, fitness journeys, and short films.</p>
+									<h2>About Marilyn</h2>
+									<p>I'm Marilyn, a third-year computer science student at UC Berkeley. I started in economics my freshman year and quickly decided to go the computer science route due to wanting to challenge myself with a versatile degree. On the software engineering side, I interned at Atlassian last summer on their Bitbucket Cloud team and I'll be at Meta this upcoming summer, hopefully working on some VR stuff with MetaQuest. I've been super interested in computer graphics and rendering lately.</p>
+									<br>
+									<p>On the non-CS side, I am an actress actively taking theater and film acting classes on the side, as well as working with directors on short films. Being on camera, with either acting, vlogging, or game streaming, is my greatest joy. With acting, making the audience feel an emotion they weren't able to process previously is awesome. As a musician who has been playing the piano and flute for 15 years now, I find acting very refreshing: it is using my body and face as instruments to allow people to feel something. I'm interested in film acting more than theater.</p>
+									<br>
+									<p>On the other other side, I enjoy playing and streaming League of Legends with friends, going to NBA games (Warriors specifically), and running, weightlifting, and playing basketball and tennis. I would like to run in the next SF marathon.</p>
+		
 								</section>
 								<section>
-									<h2>Follow me on ...</h2>
+									<h2>Please feel free to connect with me...</h2>
 									<ul class="icons">
+										<li><a href = "mailto: marilynyu@berkeley.edu">Send Email</a></li>
 										<li><a href="https://www.instagram.com/marilynyu_" class="icon brands fa-instagram"><span class="label">Instagram</span></a></li>
 										<li><a href="https://github.com/marilynjoyce" class="icon brands fa-github"><span class="label">GitHub</span></a></li>
 										<li><a href="https://www.linkedin.com/in/marilynyu/" class="icon brands fa-linkedin-in"><span class="label">LinkedIn</span></a></li>
