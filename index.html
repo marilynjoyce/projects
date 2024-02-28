@@ -2,13 +2,31 @@
 
 <html>
 	<head>
-		<meta name="viewport" content="width=device-width, initial-scale=0.5">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<style>
-			body {
-  font-family: 'Source Sans Pro',Helvetica Neue,Helvetica,Arial,sans-serif; 
-  font-size: 16px;
-  line-height: 1.75;
+			@media screen  and (max-device-width: 480px) and (orientation: portrait) { 
+	body {
+		width: 100%;
+	}	
+	#timeline {
+		display: grid;
+  flex-direction: column;
+  background-color: #031625;
+  overflow: auto;
+  width: 100%;
+  &:hover {
+    .tl-item {
+      width: 100%;
+    }
+  }
 }
+.thumb {
+	button {
+		float:right;
+            border-radius:25px;
+        }
+	}
+
 #timeline {
   display: flex;
   background-color: #031625;
@@ -16,6 +34,139 @@
   width: 100%;
   min-width: 320px;
   max-width: 100%;
+
+  &:hover {
+    .tl-item {
+      width: 100%;
+    }
+  }
+}
+#texter {
+		font-size: 0.1rem;
+	}
+.tl-item {
+transform: translateY(-50%);
+  position: relative;
+  width: 100%;
+  height: 10vh;
+  min-height: 600px;
+  color: #fff;
+  overflow: hidden;
+  transition: width 0.5s ease;
+  max-width: 100%;
+  
+  &:before, &:after {
+    content: '';
+    width: 100%; height: 100%;
+  }
+
+  &:after {
+    background: transparentize(#031625);
+	width: 100%;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+  }
+
+  &:before {
+    background: linear-gradient(to bottom, rgba(0,0,0,0) 0%,rgba(0,0,0,1) 75%);
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+
+  &:hover {
+    width: 100% !important;
+    
+    &:after {
+      opacity: 0;
+    }
+
+    &:before {
+      opacity: 1;
+	  width: 100%;
+      transform: translate3d(0, 0, 0) translateY(0);
+      transition: opacity 1s ease, transform 1s ease 0.25s;
+    }
+    
+    .tl-content {
+      opacity: 1;
+      transform: translateY(0);
+      transition: all 0.75s ease 0.5s;
+    }
+
+    .tl-bg {
+      filter: grayscale(0);
+    }
+  }
+}
+
+.tl-content {
+  transform: translate3d(0, 0, 0) translateY(-50px);
+  line-height: normal;
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  margin: 0 1.618em;
+  top: 40%;
+  opacity: 0;
+  max-width: 100%;
+  
+  
+  h1 {
+    font-family: 'Pathway Gothic One',Helvetica Neue,Helvetica,Arial,sans-serif;
+    text-transform: uppercase;
+    color: #1779cf;
+    font-size: 1.3rem;
+    font-weight: normal;
+  }
+  p {
+	font-size: 1rem;
+	font-stretch: expanded;
+  }
+}
+
+.tl-year {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-50%);
+  z-index: 1;
+  border-bottom: 1px solid #fff;
+  max-width: 100%;
+  p {
+    font-family: 'Pathway Gothic One',Helvetica Neue,Helvetica,Arial,sans-serif;
+    font-size: 1.8rem;
+    line-height: 0;
+  }
+}
+
+.tl-bg {
+  transform: translate3d(0, 0, 0);
+  position: absolute;
+  width: 100%; height: 100%;
+  max-width: 100%;
+  top: 0; left: 0;
+  background-size: cover;
+  background-position: center center;
+  transition: filter 0.5s ease;
+  filter: grayscale(100%);
+}
+.hihi {
+  scale:55%;
+  transform: translate3d(85%,-70%,0);
+}
+}
+@media (min-width:481px) {
+body {
+  font-family: 'Source Sans Pro',Helvetica Neue,Helvetica,Arial,sans-serif; 
+  font-size: 16px;
+  line-height: 1.75;
+}
+
+#timeline {
+  display: flex;
+  background-color: #031625;
+  overflow: hidden;
 
   &:hover {
     .tl-item {
@@ -33,7 +184,6 @@
   color: #fff;
   overflow: hidden;
   transition: width 0.5s ease;
-  max-width: 100%;
   
   &:before, &:after {
     transform: translate3d(0, 0, 0);
@@ -91,7 +241,6 @@
   margin: 0 1.618em;
   top: 40%;
   opacity: 0;
-  max-width: 100%;
   
   
   h1 {
@@ -110,7 +259,7 @@
   transform: translateX(-50%) translateY(-50%);
   z-index: 1;
   border-bottom: 1px solid #fff;
-  max-width: 100%;
+  
   p {
     font-family: 'Pathway Gothic One',Helvetica Neue,Helvetica,Arial,sans-serif;
     font-size: 1.728rem;
@@ -122,7 +271,6 @@
   transform: translate3d(0, 0, 0);
   position: absolute;
   width: 100%; height: 100%;
-  max-width: 100%;
   top: 0; left: 0;
   background-size: cover;
   background-position: center center;
@@ -132,11 +280,10 @@
 .hihi {
   transform: translateX(-60%) translateY(20%);
 }
-
+}
 		</style>
 		<title>Marilyn's Personal Website</title>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="assets/css/main.css" />
 		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
 
@@ -160,7 +307,7 @@
 					<div id="main">
 						<article class="thumb">
 							<a href="images/anti-aliasing_image_01.png" class="image"><img src="images/anti-aliasing_image_01.png" alt="" /></a>
-							<h2>RASTERIZER</h2>
+							<h2>RASTERIZER (tilt for mobile)</h2>
 							<p>A writeup of my implementation of a PNG graphics renderer, where through code, I implement different rasterization and texture-mapping techniques towards the main goal of anti-aliasing (smoothing jaggy edges).</p>
 							<a href="hw1/index.html">
 								<button>View writeup</button>
@@ -168,7 +315,7 @@
 						</article>
 						<article class="thumb">
 							<a href="images/meshedit.png" class="image"><img src="images/meshedit.png" alt="" /></a>
-							<h2>MESHEDIT</h2>
+							<h2>MESHEDIT (tilt for mobile)</h2>
 							<p>An in-depth writeup of my program comparing different strategies used to smooth triangular meshes and render more complex 3D models and 3D images on screen.</p>
 							<a href="hw2/index.html">
 								<button>View writeup</button>
@@ -191,7 +338,7 @@
 						</article>
 						<article class="thumb">
 							<a href="images/IMG_5580.JPG" class="image"><img src="images/IMG_5580.JPG" alt="" /></a>
-							<h2>YOUTUBE</h2>
+							<h2>YOUTUBE (tilt for mobile)</h2>
 							<a href="https://www.youtube.com/@girlmare/videos">
 								<button>Watch my vlogs</button>
 							</a>
