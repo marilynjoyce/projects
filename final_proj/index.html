@@ -1,0 +1,372 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    background-color: rgb(255, 255, 255);
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 200;
+    font-family: 'Source Sans Pro', sans-serif;
+    color: #000000;
+	letter-spacing: 1px;
+	line-height:27px;
+  }
+  figure {
+    display: inline-block;
+    vertical-align: top;
+    margin:0;
+}
+.imGSec{white-space:nowrap;}
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+  kbd {
+    color: #121212;
+  }
+</style>
+
+<title>Nugget</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+
+<script>
+  MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+    }
+  };
+</script>
+<script id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+
+</head>
+
+
+<body>
+    <div align="middle">
+        <table>
+        <td>
+            <img src="gifs/final.gif"width="600px"height="350px"/>
+          </td>
+        <td>
+            <img src="images/Screenshot 2024-05-01 at 2.24.50 AM.png" width="400px"height="300px"/>
+          </td>
+        </table>
+</div>
+<h1 align="middle">Nugget Pour</h1>
+<h2 align="middle">Marilyn Yu</h2>
+
+<h1 align="left">Abstract</h1>
+<p>
+    My goal for this project was to simulate pouring sauce onto a chicken nugget. In the beginning, I considered modeling the fluid with either the Eularian or Lagrangian approach that will be discussed later. I ended up choosing the Lagrangian approach and modeled our fluid particles as a vector of PointMasses, with each PointMass having its own properties that affect their position updates in each timestep. I followed Muller’s paper on particle-based fluid simulation in calculating particle pressure forces and density updates, but the main thing to consider was the viscosity of different liquids and how that affects their movements: I tried two different models of viscous and cohesion forces, one following Muller, and the other following Peer’s Viscosity 2015 paper. Once I finished modeling the fluid, our next step was to add texture mapping and shaders to smooth the particles into a cohesive fluid, so that visually, I aren't just looking at a bunch of separate particles moving separately. I then drew larger fluid bubbles onto the screen with the same physical properties as the PointMasses. These particles successfully interact with the plane, sphere, and nugget. 
+</p>
+<br>
+<p>
+    For the sponge, I found a COLLADA file online, and preprocessed it via Python scripts. With shading, I attempted various methods to implement a continuous fluid shading from the particle fluid. Our initial attempt involves the screen space fluid rendering method, but using different shader files for each step of rendering did not work well with the pipeline. I favored the marching cube algorithm, and added functions in the fluid simulation to divide the 3D space of the fluid into cubes, and iterated through the cubes for the marching cubes algorithm to create a continuous mesh. This mesh was then updated and rendered at every simulation time step.
+</p>
+
+<h1 align="left">Part I: SPH (Smoothed Particle Hydrodynamics)</h1>
+
+<p>
+    I wanted to base our project on smoothed particle hydrodynamics to allow us to use a general model. SPH distributes quantities of each particle in a local neighborhood using smoothing kernels based on a given radius. In SPH, the field quantities of a particle at location x are interpolated using all other particles’  masses, densities, positions, and field quantities at their positions. In the equation below, W is called the smoothing kernel, which in SPH, defines the influence of each particle on its surrounding space. The kernel is non-zero only within a finite range of distances from a particle, determined by h (to be discussed later). The integral of the kernel function over its entire domain must be equal to 1 to ensure that the interpolated values are properly weighted and conserve the total quantity being interpolated.
+</p>
+<div align="middle">
+		  <img src="equations/general_sph.png" width="500px">
+		  <figcaption>General SPH field quantity equation at particle location r</figcaption>
+</div>
+<br>
+<p>
+    I kept the mass of each particle the same and also constant throughout the simulation for conservation of mass. However, the density ρi varies and needs to be evaluated at every time step. Substituting density for the field quantity, and solving for the density at location r. This is the formula we use for updating the density of each particle at every timestep.
+</p>
+<div align="middle">
+    <img src="equations/SPH_density.png" width="500px">
+    <figcaption>Density update equation</figcaption>
+</div>
+<br>
+<p>
+    With Eulerian-based fluid simulations, since they are grid-based, fluids are described by a velocity field v, density field ρ , and pressure field p. 
+</p>
+<div align="middle">
+	<table style="width:100%">
+	  <tr align="center">
+		<td>
+		  <img src="equations/conservation_of_mass.png" width="300px" height="100px"/>
+		  <figcaption>Conservation of mass</figcaption>
+		</td>
+        <td>
+            <img src="equations/navier_stokes.png" align="middle" width="500px" height="100px"/>
+            <figcaption>Navier-Stokes, conservation of momentum (simplified for incompressible fluids)</figcaption>
+          </td>
+	  </tr>
+	</table>
+</div>
+<p>
+    These two equations describe how the three fields described above evolve over time. Using a particle-based system of PointMasses greatly simplifies these equations, since the number of particles doesn’t change throughout the simulation and they are constant mass. Also, the term v·(delta)v in Navier-Stokes is not needed for particle systems, because our PointMasses each carry a velocity component, so this term is implicitly accounted for already. On the RHS of the Navier-Stokes equation is the summation of three force density fields, including pressure, gravity and viscous forces. Let’s call this sum f. We can rearrange the equation to calculate the acceleration for a particle, a=f/density, where f is the sum of the three force density fields on the particle and density is the current density of the particle.
+</p>
+
+<h1 align="left">II: Force Density Fields: External, Pressure, Viscosity</h1>
+<h2 align="left">External Forces</h2>
+<p>
+    Our simulator supports external forces of gravity and particle-plane and particle-sphere collisions. These forces are applied directly to the particles without the use of SPH. When particles collide with solid surfaces, we correct the appropriate component of their positions and reflect the velocity component that is perpendicular to the object’s surface.
+</p>
+<div align="middle">
+	<table style="width:100%">
+	  <tr align="center">
+		<td>
+		  <img src="gifs/freefall.gif" width="500px" height="400px"/>
+		  <figcaption>Particles Freefalling </figcaption>
+		</td>
+        <td>
+            <img src="gifs/wtf.gif" width="500px" height="400px"/>
+            <figcaption>Particle-sphere collision</figcaption>
+          </td>
+	  </tr>
+	</table>
+</div>
+<br>
+<h2 align="left">Pressure</h2>
+<p>
+	We apply the general SPH rule mentioned above here for pressure. The pressures at the locations of the two particles are not necessarily equal, so the pressure forces aren’t symmetric. This can lead to instabilities like clustering or explosions in our simulation. Based on this paper,  we have chosen to symmetrize the pressure force in this way, for purposes of stability and efficiency. In our simulation, particles only have the qualities of mass, position and velocity, so we had to calculate the pressure of each particle first, using the ideal gas equation p = kρ, where k is the temperature-based gas constant. If k is higher, the particles have a higher temperature and therefore have more kinetic energy and move faster (increased gas pressure).Since we wanted to animate materials with constant density at rest, the fluid should have some internal cohesion and have attractive-repulsive forces instead of purely repulsive forces, so we choose to follow Desbrun's paper and model the ideal gas equation as this: where we include an offset of rest density. The advantages of this include even distribution of the particles, since they have the same mass. Since we’re using these PointMasses as sample points to approximate continuous functions, this even distribution is useful. Also, constant density implies constant volume, so we hoped the fluid would tend to return to its initial volume after a deformation. The offset influences the gradient of a field smoothed by SPH and makes the simulation numerically more stable.
+</p>
+<div align="middle">
+	<table style="width:100%">
+	  <tr align="center">
+		<td>
+		  <img src="equations/gasoffset.png"height="100px">
+		  <figcaption>Modified gas equation with offset</figcaption>
+		</td>
+        <td>
+            <img src="equations/symmetricpressure.png"height="100px">
+            <figcaption>Symmetrized Pressure Equation</figcaption>
+          </td>
+	  </tr>
+	</table>
+</div>
+<div align="middle">
+	<table style="width:100%">
+	  <tr align="center">
+		<td>
+		  <img src="gifs/lowgasconstant.gif"height="500px">
+		  <figcaption>Low gas constant</figcaption>
+		</td>
+        <td>
+            <img src="gifs/highgasconstant.gif"height="500px">
+            <figcaption>High gas constant</figcaption>
+          </td>
+	  </tr>
+	</table>
+</div>
+<br>
+<h2 align="left">Viscosity Model I</h2>
+<p>
+    Our initial attempt at applying viscous forces was continuing to apply the SPH rule, where we symmetrize this force again, since the velocity field is different with each particle.
+</p>
+<div align="middle">
+	<table style="width:100%">
+	  <tr align="center">
+		<td>
+		  <img src="equations/visc1.png" height="100px"/>
+		  <figcaption>Original Viscosity Equation</figcaption>
+		</td>
+		<td>
+		  <img src="equations/visc2.png" height="100px"/>
+		  <figcaption>Symmetric Viscosity Equation</figcaption>
+		</td>
+	  </tr>
+	</table>
+</div>
+<p>
+    We choose this symmetrization because viscous forces only depend on the difference in velocities, not absolute velocities. Essentially, particle x will accelerate in the direction of the relative velocity of its environment. µ is the viscosity of the given fluid, so if we want to model water, we’ll decrease it, while with bbq sauce, we’ll increase it. The higher µ is, the higher the viscous force is on each particle, which makes the fluid as a whole more resistant to flow.
+</p>
+<div align="middle">
+	<table style="width:100%">
+	  <tr align="center">
+		<td>
+		  <img src="gifs/low_viscconstant.gif" width=" 300px" height="300px">
+          <figcaption>Low Viscosity Constant </figcaption>
+		</td>
+		<td>
+		  <img src="gifs/high_visc.gif" width=" 300px" height="300px">
+          <figcaption>High Viscosity Constant</figcaption>
+		</td>
+	  </tr>
+	</table>
+</div>
+<h2 align="left">Viscosity Model II</h2>
+<p>
+    We then tested another way of modeling cohesion (pressure) and viscosity forces, following this algorithm for the viscous SPH fluid solver mentioned in “An Implicit Viscosity Formulation for SPH Fluids.” For cohesion force, we followed Wang's surface tension paper.  The cohesion forces are implemented by combining their surface tension model with the implicit incompressible SPH method. We thought this method would simulate the fluid surface tension and attraction more accurately, and improve numerical stability and computational efficiency. For viscosity, we based our modification on Peer 2015, using this algorithm below.
+</p>
+<div align="middle">
+	<table style="width:100%">
+	  <tr align="center">
+		<td>
+		  <img src="gifs/visc2.gif"width="700px"height="400px">
+          <figcaption>Animation of viscosity model based on Peer 2015</figcaption>
+		</td>
+	  </tr>
+	</table>
+</div>
+<p>
+The main difference between the old viscous force method and this one is that solving these velocity updates for each particle at a future time step requires knowledge of all other particles at future timesteps, resulting in a linear system of unknown velocities vi(t + ∆t). We created a matrix solver to solve this problem, which estimates the best solution set to all particles’ velocities at the next timestep. We use the the conjugate gradient library in Eigen.cpp,
+and limit the error to 10^-9 * rest_density. A few things to note: the matrix is sparse, and the conjugate gradient is iterative which works better for our case. Overall, we solve 3 systems of linear equations to find v0, v1, v2 where each vi is the velocity in a direction.
+</p>
+<h1>III:Smoothing Kernels</h1>
+<p>
+    As mentioned earlier, the purpose of smoothing kernels is to account for the impact of nearby particles within a given radius on a certain particle’s attributes like density, pressure force, and viscosity. The choice of a smoothing kernel, W, is very significant. A small radius, h, will create more local interactions and the fluid will separate more easily into many pieces. Computational efficiency is also dependent on h. If we consider the particles being well-distributed in space, we know the mean number of interactions to compute for each particle by considering the average number of them in a sphere of radius 2h. According to this study by Monoghan,
+“Good” kernels are ones that have a Fourier transform falling rapidly with wave number. The kernels we use are based on Muller's paper.
+</p>
+<div align="middle">
+	<table style="width:100%">
+	  <tr align="center">
+		<td>
+		  <img src="equations/W_poly.png"height="100px"width="500px">
+		</td>
+	  </tr>
+	</table>
+</div>
+<br>
+<p>
+    We used this kernel everywhere except for pressure and viscous forces. If this kernel is used for the computation of pressure forces, particles tend to cluster under higher pressure. As particles get very close, the repulsion force disappears because the gradient of the kernel approaches zero at the center. Therefore, we turned to Desbrun’s spiky kernel (ONLY USED IN MODEL 1) with a non-vanishing gradient near the center.
+</p>
+<div align="middle">
+	<table style="width:100%">
+	  <tr align="center">
+		<td>
+		  <img src="equations/W_spiky.png"height="100px"width="500px">
+		</td>
+	  </tr>
+	</table>
+</div>
+<p>
+    This kernel above solves the problem of clustering by generating necessary repulsion forces. Lastly, viscosity is caused by friction, so it should never increase particles’ relative velocities, but decrease the fluid’s kinetic energy. The problem with standard SPH kernels is that for two given particles that come near one another, the smoothed velocity field may have a negative Laplacian, which increases their relative velocity. 
+</p>
+<div align="middle">
+	<table style="width:100%">
+	  <tr align="center">
+		<td>
+		  <img src="equations/W_visc.png"height="100px"width="600px">
+		</td>
+	  </tr>
+	</table>
+</div>
+<p>
+    This last kernel (ONLY USED IN MODEL 1) is designed to have a positive Laplacian everywhere. This kernel highly increased the stability of our simulation, and prevented unnecessary damping in our simulation.
+</p>
+
+<h1 align="left">IV: Shading</h1>
+<p>
+	We attempted several methods of rendering the fluid as a continuous mesh. While we had chosen particle based fluids since it seemed much more reasonable to implement in terms of physics and interactions with other objects, we failed to consider the extreme difficulty that comes with shading particle fluids. We used Homework 4’s implementation of shading with OpenGL for rendering our simulations, this slowed down our simulations significantly especially when we used densers or larger grids, and we were unable to shade the objects in the scene with different shaders. We also did not realize that we could not have two shaders for two objects in the simulation simultaneously in OpenGL, which looks less visually appealing when it involves different object interactions. 
+<p>
+<h2>Screen Space Fluids</h2>
+<p>
+    Since our implementation is a particle based fluid, to create a smooth continuous surface, we decided to use the Screen Space Fluid Rendering method, presented by NVIDIA at the Game Developers Conference 2010. This is more computationally efficient than the usual method of Marching Cubes, which we will explain in the next section. Screen space fluids only render fluid effects that are visible on the screen, rather than dealing with the entire 3D space, as seen in the diagram below: 
+</p>
+	In other words, at a higher density, the cloth is heavier, and you notice that the center between the two pins drags down. A higher density cloth causes the cloth to sag downwards more due to a higher (downwards) gravitational force.
+</p>
+<div align="middle">
+	  <tr align="center">
+		<td>
+		  <img src="equations/screen.png"width="400px"height="250px"/>
+		</td>
+	  </tr>
+</div>
+<p>The steps for screen space fluid rendering follow the structure of the following diagram:
+</p>
+<div align="middle">
+	  <tr align="center">
+		<td>
+		  <img src="equations/diagram.png" width="400px"height="300px"/>
+		</td>
+	  </tr>
+</div>
+<br>
+<p>
+    First we generate a depth image of particles and render the particles as spherical point sprites. Pixels that fall outside the range of the sprites are discarded. Next, we smooth the depth image using Gaussian Bilateral Blur to create a consistent smooth surface, representing the fluid. Bilateral blur involves implementing a bilateral filter on X and Y, which preserves the edges to give a more realistic look to the fluid. Then surface normals and positions from the blurred depth are calculated. Only generating the surface tends to look strange on camera, therefore, we need to add a thickness to the fluid to give it some volume. Last, we add final shading aspects such as lighting, transparency, refraction and reflection to more accurately represent a fluid. Since our scene has no background, we ignored those steps. While we attempted this method, we were unable to successfully implement it in our code, and decided to attempt other methods as well.
+</p>
+<h2>Marching Cubes</h2>
+<p>
+    Another method we attempted for shading was the Marching Cubes algorithm. We based our implementation largely on the original Paul Bourke’s 1994 algorithm for creating a polygonal surface representation of an isosurface of a 3D scalar field. Our main source of reference was the website as follows: https://paulbourke.net/geometry/polygonise/ 
+The algorithm for the algorithm can roughly be simplified to:
+</p>
+<div align="middle">
+	  <tr align="center">
+		<td>
+		  <img src="equations/algrith.png" width="300px"height="150px"/>
+		</td>
+</div>
+<p>
+    It involves first dividing the 3D space into a spatial grid consisting of cubes. Then, we need to traverse all the particles in the fluid region and save the density of the vertices of each spatial grid. By looking at the values at the corners of a given cube, we can determine what the triangle configuration should be for the cube, by checking if the value at the vertex is below a given threshold/isosurface. There can be 15 unique combinations as seen below:
+</p>
+
+<div align="middle">
+	  <tr align="center">
+		<td>
+		  <img src="equations/cubes.png"width="400px"height="200px"/>
+		</td>
+	  </tr>
+</div>
+<p>
+    To do such comparisons, we had to use a lookup table to check for the possible combinations, as marching cube is a very commonly used implementation, we based the lookup table on this implementation we found: https://github.com/aparis69/MarchingCubeCpp/blob/master/MC.h 
+Overall, marching cubes is a very slow method of visualizing a fluid surface. Since our fluid is unrestricted in the boundaries of where it can flow, we had to update the spatial grid’s size and shape at every time step of the simulation. The high computational cost of the algorithm also painfully slows down our ability to test and check our implementation, costing us significant time and challenges in debugging this method as. We believe that for future work instead of the current method we have, we should try to export the mesh and render it in Blender or other rendering platforms. 
+</p>
+<h1>Chicken Nugget</h1>
+<p>
+    While we attempted to work on the fluid simulation, we also simultaneously tried to load in chicken_nugget.dae into our scene. The process involved a few steps. We first got our .dae file and converted it to an .obj using an online converter. Then, we only selected the rows that started with v or f since we only needed the information about the vertices and faces. Then, we wrote a Python script that would output a .json file that is formatted so that it is compatible as an input for our Homework 4 code. From here, we created a custom collision object, Tri, in tri.cpp/h so that the nugget model can be loaded in as a mesh of triangles (we used Tri since Triangle was already used elsewhere). Finally, to support our custom collision object, we added additional parsing logic to main.cpp, where the triangles were added to the objects vector. The collision and render methods in tri.cpp allowed us to take care of all of the collision and rendering logic, similar to what we already did for planes.
+</p>
+<h1>FINAL PRODUCT (Peer 2015 Viscosity Model, Cohesion Forces, Phong Shading)</h1>
+<div align="middle">
+    <tr align="center">
+      <td>
+        <img src="gifs/final.gif"width="600px"height="350px"/>
+      </td>
+<div align="middle">
+    <tr align="center">
+        <table style="width:100%">
+      <td>
+        <img src="images/initialstate.png" width="400px"height="300px"/>
+      </td>
+      <td>
+        <img src="images/Screenshot 2024-05-01 at 2.24.50 AM.png" width="400px"height="300px"/>
+      </td>
+      <td>
+        <img src="images/surrounded.png" width="400px"height="300px"/>
+      </td>
+    </tr>
+</table>
+    </div>
+</div>
+<br>
+<h1 align="left">Sources</h1>
+<p>
+    https://www.win.tue.nl/~wstahw/edu/2IV00/andrei/particle_rendering/provided/p91-van_der_laan.pdf
+</p>
+<br>
+<p>
+    https://developer.download.nvidia.com/presentations/2010/gdc/Direct3D_Effects.pdf
+</p>
+<br>
+<p>
+    https://www.annualreviews.org/content/journals/10.1146/annurev.aa.30.090192.002551
+</p>
+<br>
+<p>
+   https://matthias-research.github.io/pages/publications/sca03.pdf
+</p>
+<br>
+<p>
+    https://cg.informatik.uni-freiburg.de/publications/2015_SIGGRAPH_viscousSPH.pdf
+</p>
+<br>
+<p>
+    https://d-nb.info/1155002032/34
+</p>
+<br>
+<p>
+    http://www.geometry.caltech.edu/pubs/DC_EW96.pdf
+</p>
+<p>Contributions from each team member: Marilyn shaped and adapted the base files to accomodate our FluidSim model, and implemented the updates according to Muller's paper and viscous forces in Viscosity I. Michelle implemented Peer's 2015 viscosity model and the cohesion forces from Viscosity II. Maya did the phong shading, a godsend for making the chicken nugget shaded and separating the fluid from the chicken in terms of color, and experimented with cube marching. Jaewon wrote a python script to convert the dae file into a json file, and also worked with shaders & screen space fluids.
+</p>
